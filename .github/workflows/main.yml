@@ -1,0 +1,37 @@
+name: Deploy na EC2
+on: [push]
+jobs:
+ ci-testing:
+ runs-on: ubuntu-latest
+ steps:
+ - uses: actions/checkout@v3
+ - name: Setup Python
+ uses: actions/setup-python@v4
+ with:
+ python-version: '3.9'
+ - name: Install & Test
+ run: |
+ pip install flask pytest
+ python -m unittest test_app.py
+ cd-deploy:
+ needs: ci-testing
+ runs-on: ubuntu-latest
+ steps:
+ - name: Deploy via SSH
+ uses: appleboy/ssh-action@master
+ with:
+ host: ${{ secrets.EC2_HOST }}
+ username: ${{ secrets.EC2_USERNAME }}
+ key: ${{ secrets.EC2_SSH_KEY }}
+ script: |
+ # Clona o repositório se for a primeira execução
+ if [ ! -d "meu-projeto" ]; then
+ git clone https://github.com/${{ github.repository }} meu-projeto
+ fi
+ cd meu-projeto
+ git pull origin main
+ # Instala dependências (ignora avisos de pacotes do sistema no Ubuntu)
+ pip3 install -r requirements.txt --break-system-packages
+ # Encerra qualquer processo na porta 5000 e reinicia a aplicação
+ fuser -k 5000/tcp || true
+ nohup python3 app.py > log.txt 2>&1 &
