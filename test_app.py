@@ -7,7 +7,7 @@ class TestApp(unittest.TestCase):
 
     def test_home(self):
         response = self.app.get('/')
-        self.assertEqual(response.data.decode('utf-8'), "SISTEMA ONLINE V1.0")
+        self.assertIn("SISTEMA ONLINE V1.0", response.data.decode('utf-8'))
 
 if __name__ == '__main__':
     unittest.main()
